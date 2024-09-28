@@ -6,5 +6,5 @@
 
 *.dSYM
 compile_flags.txt
-snake
-*.o
+simulation
+*/*.o
