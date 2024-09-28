@@ -13,8 +13,8 @@ OBJDIR = obj
 vpath %.c src
 vpath %.h src
 
-OBJ = simulation.o
-HEADER = shader.h
+OBJ = shader.o util.o simulation.o
+HEADER = shader.h util.h
 objects = $(addprefix $(OBJDIR)/, $(OBJ))
 
 simulation: $(objects)
