@@ -34,17 +34,6 @@ void resizeCallback(GLFWwindow* window, int width, int height){
   glViewport(0, 0, width, height);
 }
 
-
-void generateCircleVerticies(float* vert, float x, float y, float radius, int segments){
-  float theta;
-  for(int i = 0; i <= segments; i++){
-    theta = 2.0f * PI * i / segments;
-    vert[2*i] = x + radius * cosf(theta); 
-    vert[2*i+1] = y + radius * sinf(theta); 
-  }
-}
-
-
 int main(){
   glfwSetErrorCallback(errorCallback);
   if(!glfwInit()){ errorCallback(0, "glfw didnt init"); return -1; }
@@ -68,23 +57,32 @@ int main(){
  
   struct shader* s = createShaderProgram(
       "./shaders/vertexShader.glsl", 
-      "./shaders/fragmentShader.glsl"
+      "./shaders/fragmentCircleShader.glsl"
     );
-
-  int segments = 100; 
-  float radius = 0.5f;
-  float* vert = (float*)malloc((segments + 2) * 2 * sizeof(float));
   
-  generateCircleVerticies(vert, 0.0f, 0.0f, radius, segments);
+  float vertices[] = {
+    -1.0f, -1.0f,
+    1.0f, -1.0f, 
+    1.0f, 1.0f, 
+    -1.0f, 1.0f
+  };
+  unsigned int indices[] = {
+    0, 1, 2,
+    0, 2, 3
+  };
 
-  unsigned int VBO, VAO;
+  unsigned int VBO, VAO, EBO;
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
 
   glBindVertexArray(VAO);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, (segments + 2) * 2 * sizeof(float), vert, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
@@ -107,12 +105,21 @@ int main(){
     }
     
     // start of loop
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     
     setActiveShader(s);
+    
+    int resolutionLoc = glGetUniformLocation(s->program, "u_resolution");
+    glUniform2f(resolutionLoc, WIDTH, HEIGHT);
+    
+    int centerLoc = glGetUniformLocation(s->program, "u_center");
+    glUniform2f(centerLoc, 0.5f, 0.5f);
+    
+    int radiusLoc = glGetUniformLocation(s->program, "u_radius");
+    glUniform1f(radiusLoc, 0.1f);
+    
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, segments+2);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -120,9 +127,10 @@ int main(){
 
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
-  free(vert);
+  glDeleteBuffers(1, &EBO);
   deleteShader(s);
   
   glfwDestroyWindow(window);
   glfwTerminate();
+  return 0;
 }

@@ -7,13 +7,6 @@
 #include "shader.h"
 #include "util.h"
 
-// shader struct
-struct shader {
-  unsigned int vertexShader;
-  unsigned int fragmentShader;
-  unsigned int program;
-};
-
 // a function to check that shaders were compiled correctly
 void shaderCompilerCheck(unsigned int shader){
   int success;
