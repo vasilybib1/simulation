@@ -26,11 +26,12 @@ const int WIDTH = 1000;
 const int HEIGHT = 1000;
 
 const vec2 GRAVITY = {0, -1000.0f};
+const int SIZE = 1;
 
 int G_fill = 1;
-verletObj cir[10];
-vec2 posArr[10];
-float radArr[10];
+verletObj cir[SIZE];
+vec2 posArr[SIZE];
+float radArr[SIZE];
 
 void verletObj_update(verletObj* obj, float dt){
   vec2 displacement;
@@ -74,12 +75,57 @@ void sim_updatePosition(verletObj* obj, float dt, int size){
   }
 }
 
-// TODO: fix the constraints 
+void sim_applyCirBorder(verletObj* obj, vec2 center, float radius, int size){
+  for(int i = 0; i < size; i++){
+    vec2 v = (vec2){center.x - obj[i].position.x, center.y - obj[i].position.y};
+    float dist = sqrt(v.x * v.x + v.y * v.y);
+    if(dist > (radius - obj[i].radius)){
+      vec2 n = (vec2){v.x / dist, v.y / dist};
+      obj[i].position.x = center.x - n.x * (radius - obj[i].radius);
+      obj[i].position.y = center.y - n.y * (radius - obj[i].radius);
+    }
+  }
+}
+
 void sim_applyBorder(verletObj* obj, float dt, int size){
   for(int i = 0; i < size; i++){
     if(obj[i].position.y - obj[i].radius <= 0.0f){
       verletObj_accelerate(&obj[i], (vec2){0.0f, GRAVITY.y * -1});
       obj[i].position.y = obj[i].radius;
+    }
+    if(obj[i].position.y + obj[i].radius >= 2.0f){
+      //verletObj_accelerate(&obj[i], (vec2){0.0f, GRAVITY.y});
+      obj[i].position.y = 2.0f - obj[i].radius;
+    }
+    if(obj[i].position.x - obj[i].radius <= 0.0f){
+      //verletObj_accelerate(&obj[i], (vec2){1000.0f, 0.0f});
+      obj[i].position.x = obj[i].radius;
+    }
+    if(obj[i].position.x - obj[i].radius >= 2.0f){
+      //verletObj_accelerate(&obj[i], (vec2){1000.0f, 0.0f});
+      obj[i].position.x = 2.0f - obj[i].radius;
+    }
+  }
+}
+
+void sim_checkCollisions(verletObj* obj, float dt, int size){
+  float responseCoef = 0.05f;
+  for(int i = 0; i < size; i++){
+    for(int j = i+1; j < size; j++){
+      vec2 v = (vec2){obj[i].position.x - obj[j].position.x, obj[i].position.y - obj[j].position.y};
+      float dist2 = v.x * v.x * v.y * v.y;
+      float minDist = obj[i].radius + obj[j].radius;
+      if(dist2 < minDist * minDist){
+        float dist = sqrt(dist2);
+        vec2 n = (vec2){v.x / dist, v.y / dist};
+        float massRatio1 = obj[i].radius / (obj[i].radius + obj[j].radius);
+        float massRatio2 = obj[j].radius / (obj[i].radius + obj[j].radius);
+        float delta = 0.5f * responseCoef *  (dist - minDist);
+        obj[i].position.x -= n.x * (massRatio2 * delta);
+        obj[i].position.y -= n.y * (massRatio2 * delta);
+        obj[j].position.x += n.x * (massRatio1 * delta);
+        obj[j].position.y += n.y * (massRatio1 * delta);
+      }
     }
   }
 }
@@ -109,13 +155,20 @@ static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, i
   }
   if(key == GLFW_KEY_SPACE && action == GLFW_PRESS){
     for(int i = 0; i < 10; i++){
-      cir[i].position = (vec2){0.1 + (i*0.2), 1 + 0.8*(float)rand()/RAND_MAX};
+      cir[i].position = (vec2){1.5f, 1};//+ 0.8*(float)rand()/RAND_MAX};
+      //cir[i].position = (vec2){0.1 + (i*0.2), 1 + 0.8*(float)rand()/RAND_MAX};
       cir[i].positionLast = cir[i].position;
       cir[i].acceleration = (vec2){0.0, 0.0};
-      cir[i].radius = 0.1 + 0.1 * (float)rand()/RAND_MAX;
+      cir[i].radius = 0.1 * (float)rand()/RAND_MAX;
     }
     setPositionArr(cir, 10);
     setRadiusArr(cir, 10);
+  }
+  if(key == GLFW_KEY_E && action == GLFW_PRESS){
+    for(int i = 0; i < sizeof(posArr)/sizeof(posArr[0]); i++){
+      printf("%f %f | ", posArr[i].x, posArr[i].y);
+    }
+    printf("\n");
   }
 }
 
@@ -147,7 +200,8 @@ int main(){
  
   struct shader* s = createShaderProgram(
       "./shaders/vertexShader.glsl", 
-      "./shaders/fragmentMultiCircleShader.glsl"
+      "./shaders/fragmentMultiCircleWithCenterShader.glsl"
+      //"./shaders/fragmentMultiCircleShader.glsl"
       //"./shaders/fragmentCircleShader.glsl"
     );
   
@@ -181,14 +235,14 @@ int main(){
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-  for(int i = 0; i < 10; i++){
-    cir[i].position = (vec2){0.1 + (i*0.2), 1 + 0.8*(float)rand()/RAND_MAX};
+  for(int i = 0; i < SIZE; i++){
+    cir[i].position = (vec2){1.5, 1};//+ 0.8*(float)rand()/RAND_MAX};
     cir[i].positionLast = cir[i].position;
     cir[i].acceleration = (vec2){0.0, 0.0};
     cir[i].radius = 0.1 + 0.1 * (float)rand()/RAND_MAX;
   }
-  setPositionArr(cir, 10);
-  setRadiusArr(cir, 10);
+  setPositionArr(cir, SIZE);
+  setRadiusArr(cir, SIZE);
 
   // for fps calculation
   double lastTime = glfwGetTime();
@@ -208,8 +262,8 @@ int main(){
     // start of render
     glClear(GL_COLOR_BUFFER_BIT);
     
-    setPositionArr(cir, 10);
-    setRadiusArr(cir, 10);
+    setPositionArr(cir, SIZE);
+    setRadiusArr(cir, SIZE);
     
     setActiveShader(s);
     
@@ -217,11 +271,17 @@ int main(){
     glUniform2f(resolutionLoc, WIDTH, HEIGHT);
     
     int positionArrLoc = glGetUniformLocation(s->program, "u_position_array");
-    glUniform2fv(positionArrLoc, 10, (GLfloat *) &posArr);
+    glUniform2fv(positionArrLoc, SIZE, (GLfloat *) &posArr);
     
     int radiusArrLoc = glGetUniformLocation(s->program, "u_radius_array");
-    glUniform1fv(radiusArrLoc, 10, (GLfloat *) &radArr);
+    glUniform1fv(radiusArrLoc, SIZE, (GLfloat *) &radArr);
     
+    int centerRadiusLoc = glGetUniformLocation(s->program, "u_center_radius");
+    glUniform1f(centerRadiusLoc, 0.9f);
+
+    int centerPosLoc = glGetUniformLocation(s->program, "u_center_center");
+    glUniform2f(centerPosLoc, 1.0f, 1.0f);
+
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     
@@ -229,10 +289,11 @@ int main(){
     glfwPollEvents();
     // end of render
     
-    sim_updatePosition(cir, dt, 10);
-    sim_applyGravity(cir, dt, 10);
-    sim_applyBorder(cir, dt, 10);
-    
+    sim_applyGravity(cir, dt, SIZE);
+    sim_checkCollisions(cir, dt, SIZE);
+    sim_applyCirBorder(cir, (vec2){1.0f, 1.0f}, 0.9f, SIZE);
+    sim_updatePosition(cir, dt, SIZE);
+
   }
 
   glDeleteVertexArrays(1, &VAO);
