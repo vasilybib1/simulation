@@ -25,9 +25,12 @@ typedef struct {
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
 
-const vec2 GRAVITY = {0, -1.0f};
+const vec2 GRAVITY = {0, -1000.0f};
 
 int G_fill = 1;
+verletObj cir[10];
+vec2 posArr[10];
+float radArr[10];
 
 void verletObj_update(verletObj* obj, float dt){
   vec2 displacement;
@@ -36,6 +39,8 @@ void verletObj_update(verletObj* obj, float dt){
   obj->positionLast = obj->position;
   obj->position.x = obj->position.x + displacement.x + obj->acceleration.x * (dt * dt);
   obj->position.y = obj->position.y + displacement.y + obj->acceleration.y * (dt * dt);
+  obj->acceleration.x = 0.0f;
+  obj->acceleration.y = 0.0f;
 }
 
 void verletObj_setVel(verletObj* obj, vec2 vel, float dt){
@@ -69,6 +74,27 @@ void sim_updatePosition(verletObj* obj, float dt, int size){
   }
 }
 
+// TODO: fix the constraints 
+void sim_applyBorder(verletObj* obj, float dt, int size){
+  for(int i = 0; i < size; i++){
+    if(obj[i].position.y - obj[i].radius <= 0.0f){
+      verletObj_accelerate(&obj[i], (vec2){0.0f, GRAVITY.y * -1});
+      obj[i].position.y = obj[i].radius;
+    }
+  }
+}
+
+void setPositionArr(verletObj* obj, int size){
+  for(int i = 0; i < size; i++){
+    posArr[i] = obj[i].position;
+  }
+}
+void setRadiusArr(verletObj* obj, int size){
+  for(int i = 0; i < size; i++){
+    radArr[i] = obj[i].radius;
+  }
+}
+
 void errorCallback(int error, const char* desc){ 
   fprintf(stderr, "Error: %s\n", desc);
 }
@@ -80,6 +106,16 @@ static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, i
   if(key == GLFW_KEY_TAB && action == GLFW_PRESS){
     if(G_fill){ G_fill = 0; glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); }
     else{ G_fill = 1; glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
+  }
+  if(key == GLFW_KEY_SPACE && action == GLFW_PRESS){
+    for(int i = 0; i < 10; i++){
+      cir[i].position = (vec2){0.1 + (i*0.2), 1 + 0.8*(float)rand()/RAND_MAX};
+      cir[i].positionLast = cir[i].position;
+      cir[i].acceleration = (vec2){0.0, 0.0};
+      cir[i].radius = 0.1 + 0.1 * (float)rand()/RAND_MAX;
+    }
+    setPositionArr(cir, 10);
+    setRadiusArr(cir, 10);
   }
 }
 
@@ -144,18 +180,21 @@ int main(){
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
-  
-  verletObj cir[1];
-  cir[0].position = (vec2){1.0, 1.0};
-  cir[0].positionLast = (vec2){1.0, 1.0};
-  cir[0].acceleration = (vec2){0.0, 0.0};
-  cir[0].radius = 0.2f;
+
+  for(int i = 0; i < 10; i++){
+    cir[i].position = (vec2){0.1 + (i*0.2), 1 + 0.8*(float)rand()/RAND_MAX};
+    cir[i].positionLast = cir[i].position;
+    cir[i].acceleration = (vec2){0.0, 0.0};
+    cir[i].radius = 0.1 + 0.1 * (float)rand()/RAND_MAX;
+  }
+  setPositionArr(cir, 10);
+  setRadiusArr(cir, 10);
 
   // for fps calculation
   double lastTime = glfwGetTime();
   int nbFrames = 0;
   float dt = 0.001f;
-
+  
   while(!glfwWindowShouldClose(window)){
     // calculates ms per frame and prints the output once a second
     double currentTime = glfwGetTime();
@@ -169,16 +208,19 @@ int main(){
     // start of render
     glClear(GL_COLOR_BUFFER_BIT);
     
+    setPositionArr(cir, 10);
+    setRadiusArr(cir, 10);
+    
     setActiveShader(s);
     
     int resolutionLoc = glGetUniformLocation(s->program, "u_resolution");
     glUniform2f(resolutionLoc, WIDTH, HEIGHT);
     
     int positionArrLoc = glGetUniformLocation(s->program, "u_position_array");
-    glUniform2fv(positionArrLoc, 1, (GLfloat *) &cir->position);
+    glUniform2fv(positionArrLoc, 10, (GLfloat *) &posArr);
     
     int radiusArrLoc = glGetUniformLocation(s->program, "u_radius_array");
-    glUniform1fv(radiusArrLoc, 1, &cir->radius);
+    glUniform1fv(radiusArrLoc, 10, (GLfloat *) &radArr);
     
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -187,8 +229,10 @@ int main(){
     glfwPollEvents();
     // end of render
     
-    sim_updatePosition(cir, dt, 1);
-    sim_applyGravity(cir, dt, 1);
+    sim_updatePosition(cir, dt, 10);
+    sim_applyGravity(cir, dt, 10);
+    sim_applyBorder(cir, dt, 10);
+    
   }
 
   glDeleteVertexArrays(1, &VAO);

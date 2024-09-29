@@ -2,13 +2,13 @@
 out vec4 FragColor;
 
 uniform vec2 u_resolution;
-uniform vec2 u_position_array[1];
-uniform float u_radius_array[1];
+uniform vec2 u_position_array[10];
+uniform float u_radius_array[10];
 
 void main(){
   vec4 color = vec4(0.0);
 
-  for(int i = 0; i < 1; ++i){
+  for(int i = 0; i < 10; ++i){
     vec2 st = gl_FragCoord.xy / u_resolution;
     float dist = distance(st, u_position_array[i]);
     
