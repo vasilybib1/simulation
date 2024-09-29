@@ -26,7 +26,7 @@ const int WIDTH = 1000;
 const int HEIGHT = 1000;
 
 const vec2 GRAVITY = {0, -1000.0f};
-const int SIZE = 1;
+const int SIZE = 2;
 
 int G_fill = 1;
 verletObj cir[SIZE];
@@ -109,11 +109,11 @@ void sim_applyBorder(verletObj* obj, float dt, int size){
 }
 
 void sim_checkCollisions(verletObj* obj, float dt, int size){
-  float responseCoef = 0.05f;
+  float responseCoef = 0.75f;
   for(int i = 0; i < size; i++){
     for(int j = i+1; j < size; j++){
       vec2 v = (vec2){obj[i].position.x - obj[j].position.x, obj[i].position.y - obj[j].position.y};
-      float dist2 = v.x * v.x * v.y * v.y;
+      float dist2 = v.x * v.x + v.y * v.y;
       float minDist = obj[i].radius + obj[j].radius;
       if(dist2 < minDist * minDist){
         float dist = sqrt(dist2);
@@ -127,6 +127,15 @@ void sim_checkCollisions(verletObj* obj, float dt, int size){
         obj[j].position.y += n.y * (massRatio1 * delta);
       }
     }
+  }
+}
+
+void initCirArray(){
+  for(int i = 0; i < SIZE; i++){
+    cir[i].position = (vec2){1 + 0.5*(float)rand()/RAND_MAX, 1};//+ 0.8*(float)rand()/RAND_MAX};
+    cir[i].positionLast = cir[i].position;
+    cir[i].acceleration = (vec2){0.0, 0.0};
+    cir[i].radius = 0.1 + 0.1 * (float)rand()/RAND_MAX;
   }
 }
 
@@ -154,15 +163,7 @@ static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, i
     else{ G_fill = 1; glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
   }
   if(key == GLFW_KEY_SPACE && action == GLFW_PRESS){
-    for(int i = 0; i < 10; i++){
-      cir[i].position = (vec2){1.5f, 1};//+ 0.8*(float)rand()/RAND_MAX};
-      //cir[i].position = (vec2){0.1 + (i*0.2), 1 + 0.8*(float)rand()/RAND_MAX};
-      cir[i].positionLast = cir[i].position;
-      cir[i].acceleration = (vec2){0.0, 0.0};
-      cir[i].radius = 0.1 * (float)rand()/RAND_MAX;
-    }
-    setPositionArr(cir, 10);
-    setRadiusArr(cir, 10);
+    initCirArray();
   }
   if(key == GLFW_KEY_E && action == GLFW_PRESS){
     for(int i = 0; i < sizeof(posArr)/sizeof(posArr[0]); i++){
@@ -235,12 +236,7 @@ int main(){
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-  for(int i = 0; i < SIZE; i++){
-    cir[i].position = (vec2){1.5, 1};//+ 0.8*(float)rand()/RAND_MAX};
-    cir[i].positionLast = cir[i].position;
-    cir[i].acceleration = (vec2){0.0, 0.0};
-    cir[i].radius = 0.1 + 0.1 * (float)rand()/RAND_MAX;
-  }
+  initCirArray();
   setPositionArr(cir, SIZE);
   setRadiusArr(cir, SIZE);
 
