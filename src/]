@@ -32,11 +32,8 @@ const int WIDTH = 1000;
 const int HEIGHT = 1000;
 
 const int SUBSTEPS = 8;
-const float MAX_RAD = 0.02f;
-const float RAD_VARIANCE = 0.01f;
 const vec2 GRAVITY = {0, -1000.0f};
 const int SIZE = 100;
-const float PUSH_FORCE = 100000;
 
 int G_fill = 1;
 verletObj cir[SIZE];
@@ -70,11 +67,13 @@ vec3 hsv_to_rgb(float h, float s, float v){
 void generateColor(int size){
   for(int i = 0; i < size; i++){
     float h = (float)(rand() % 360);
-    float s = 1.0f; // + (rand() % 10) / 100.0f;
-    float v = 1.0f; // + (rand() % 20) / 100.0f;
+    float s = 0.9f + (rand() % 10) / 100.0f;
+    float v = 0.8f + (rand() % 20) / 100.0f;
     colorArr[i] = hsv_to_rgb(h, s, v);
   }
 }
+
+
 
 void verletObj_update(verletObj* obj, float dt){
   vec2 displacement;
@@ -157,7 +156,7 @@ void initCirArray(){
     cir[i].position = (vec2){1 + 0.1*(float)rand()/RAND_MAX, 1 + 0.1*(float)rand()/RAND_MAX};
     cir[i].positionLast = cir[i].position;
     cir[i].acceleration = (vec2){0.0, 0.0};
-    cir[i].radius = (MAX_RAD - RAD_VARIANCE) + RAD_VARIANCE*(float)rand()/RAND_MAX;
+    cir[i].radius = 0.01 + 0.01 * (float)rand()/RAND_MAX;
   }
 }
 
@@ -195,26 +194,6 @@ static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, i
   }
   if(key == GLFW_KEY_R && action == GLFW_PRESS){
     generateColor(SIZE);
-  }
-  if(key == GLFW_KEY_W && action == GLFW_PRESS){
-    for(int i = 0; i < SIZE; i++){
-      verletObj_accelerate(&cir[i], (vec2){0, PUSH_FORCE});
-    }
-  }
-  if(key == GLFW_KEY_A && action == GLFW_PRESS){
-    for(int i = 0; i < SIZE; i++){
-      verletObj_accelerate(&cir[i], (vec2){-PUSH_FORCE, 0});
-    }
-  }
-  if(key == GLFW_KEY_S && action == GLFW_PRESS){
-    for(int i = 0; i < SIZE; i++){
-      verletObj_accelerate(&cir[i], (vec2){0, -PUSH_FORCE});
-    }
-  }
-  if(key == GLFW_KEY_D && action == GLFW_PRESS){
-    for(int i = 0; i < SIZE; i++){
-      verletObj_accelerate(&cir[i], (vec2){PUSH_FORCE, 0});
-    }
   }
 }
 
