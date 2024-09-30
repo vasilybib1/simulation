@@ -28,15 +28,15 @@ typedef struct {
   float radius;
 } verletObj;
 
-const int WIDTH = 1000;
-const int HEIGHT = 1000;
+const int WIDTH = 800;
+const int HEIGHT = 800;
 
 const int SUBSTEPS = 8;
 const float MAX_RAD = 0.02f;
 const float RAD_VARIANCE = 0.01f;
-const vec2 GRAVITY = {0, -1000.0f};
+vec2 GRAVITY = {0, -1000.0f};
 const int SIZE = 100;
-const float PUSH_FORCE = 100000;
+const float PUSH_FORCE = 50000;
 
 int G_fill = 1;
 verletObj cir[SIZE];
@@ -196,22 +196,25 @@ static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, i
   if(key == GLFW_KEY_R && action == GLFW_PRESS){
     generateColor(SIZE);
   }
-  if(key == GLFW_KEY_W && action == GLFW_PRESS){
+  if(key == GLFW_KEY_F && action == GLFW_PRESS){
+    GRAVITY.y = GRAVITY.y * -1;
+  }
+  if(key == GLFW_KEY_W && action == GLFW_REPEAT){
     for(int i = 0; i < SIZE; i++){
       verletObj_accelerate(&cir[i], (vec2){0, PUSH_FORCE});
     }
   }
-  if(key == GLFW_KEY_A && action == GLFW_PRESS){
+  if(key == GLFW_KEY_A && action == GLFW_REPEAT){
     for(int i = 0; i < SIZE; i++){
       verletObj_accelerate(&cir[i], (vec2){-PUSH_FORCE, 0});
     }
   }
-  if(key == GLFW_KEY_S && action == GLFW_PRESS){
+  if(key == GLFW_KEY_S && action == GLFW_REPEAT){
     for(int i = 0; i < SIZE; i++){
       verletObj_accelerate(&cir[i], (vec2){0, -PUSH_FORCE});
     }
   }
-  if(key == GLFW_KEY_D && action == GLFW_PRESS){
+  if(key == GLFW_KEY_D && action == GLFW_REPEAT){
     for(int i = 0; i < SIZE; i++){
       verletObj_accelerate(&cir[i], (vec2){PUSH_FORCE, 0});
     }

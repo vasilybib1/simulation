@@ -1,6 +1,8 @@
 # Simulation
 
-A physics simulation project written in c and opengl 
+A physics partical simulation project written in c and opengl 
+
+![Alt Text](example.gif)
 
 ## To run
 
