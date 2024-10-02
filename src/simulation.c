@@ -172,6 +172,21 @@ void setRadiusArr(verletObj* obj, int size){
   }
 }
 
+unsigned int generateTexture(int size, float* data){
+  unsigned int texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_1D, texture);
+
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, size, 0, GL_RED, GL_FLOAT, data);
+
+  glBindTexture(GL_TEXTURE_1D, 0);
+  return texture;
+}
+
 void errorCallback(int error, const char* desc){ 
   fprintf(stderr, "Error: %s\n", desc);
 }
@@ -248,21 +263,22 @@ int main(){
   glViewport(0, 0, frameBufferSizeX, frameBufferSizeY);
  
   struct shader* s = createShaderProgram(
-      "./shaders/vertexShader.glsl", 
-      "./shaders/fragmentMultiCircleWithCenterShader.glsl"
+      "./shaders/vertexTextureShader.glsl", 
+      "./shaders/fragmentMultiCircleWithCenterTextureShader.glsl"
+      //"./shaders/fragmentMultiCircleWithCenterShader.glsl"
       //"./shaders/fragmentMultiCircleShader.glsl"
       //"./shaders/fragmentCircleShader.glsl"
     );
   
   float vertices[] = {
-    -1.0f, -1.0f,
-    1.0f, -1.0f, 
-    1.0f, 1.0f, 
-    -1.0f, 1.0f
+    -1.0, 1.0, 0.0, 1.0,
+    -1.0, -1.0, 0.0, 0.0,
+    1.0, -1.0, 1.0, 0.0,
+    1.0, 1.0, 1.0, 1.0
   };
   unsigned int indices[] = {
     0, 1, 2,
-    0, 2, 3
+    2, 3, 0
   };
 
   unsigned int VBO, VAO, EBO;
@@ -278,8 +294,11 @@ int main(){
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2* sizeof(float)));
+  glEnableVertexAttribArray(1);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
@@ -293,7 +312,13 @@ int main(){
   double lastTime = glfwGetTime();
   int nbFrames = 0;
   float dt = 0.001f;
-  
+
+  float newRadiusArr[100];
+  for(int i = 0; i < 100; i++){
+    newRadiusArr[i] = 0.01f + 0.01f*i;
+  }
+
+  int tex = generateTexture(SIZE, radArr);
   while(!glfwWindowShouldClose(window)){
     // calculates ms per frame and prints the output once a second
     double currentTime = glfwGetTime();
@@ -318,8 +343,13 @@ int main(){
     int positionArrLoc = glGetUniformLocation(s->program, "u_position_array");
     glUniform2fv(positionArrLoc, SIZE, (GLfloat *) &posArr);
     
-    int radiusArrLoc = glGetUniformLocation(s->program, "u_radius_array");
-    glUniform1fv(radiusArrLoc, SIZE, (GLfloat *) &radArr);
+    //int radiusArrLoc = glGetUniformLocation(s->program, "u_radius_array");
+    //glUniform1fv(radiusArrLoc, SIZE, (GLfloat *) &radArr);
+
+    glActiveTexture(GL_TEXTURE0 + tex);
+    glBindTexture(GL_TEXTURE_1D, tex);
+    int textureLoc = glGetUniformLocation(s->program, "radiusTexture");
+    glUniform1i(textureLoc, tex);
     
     int centerRadiusLoc = glGetUniformLocation(s->program, "u_center_radius");
     glUniform1f(centerRadiusLoc, 0.9f);
