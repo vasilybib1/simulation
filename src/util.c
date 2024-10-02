@@ -7,6 +7,15 @@
 
 #include "util.h"
 
+void generateColor(vec3* colorArr, int size){
+  for(int i = 0; i < size; i++){
+    float h = (float)(rand() % 360);
+    float s = 1.0f; 
+    float v = 1.0f; 
+    colorArr[i] = hsv_to_rgb(h, s, v);
+  }
+}
+
 void resizeCallback(GLFWwindow* window, int width, int height){
   glViewport(0, 0, width, height);
 }

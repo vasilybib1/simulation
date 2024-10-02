@@ -2,28 +2,32 @@
 out vec4 FragColor;
 
 uniform vec2 u_resolution;
-uniform vec2 u_position_array[100];
-uniform float u_center_radius;
-uniform vec2 u_center_center;
-uniform vec3 u_color[100];
+uniform vec3 u_background;
+uniform int u_size;
 
-uniform sampler1D radiusTexture;
+uniform sampler1D u_colorTexture;
+uniform sampler1D u_dataTexture;
 
 void main(){
   vec4 color = vec4(0.0);
 
   vec2 st = gl_FragCoord.xy / u_resolution;
-  float centerDist = distance(st, u_center_center);
-  if(centerDist < u_center_radius){
+  float centerDist = distance(st, vec2(u_background.x, u_background.y));
+  if(centerDist < u_background.z){
     color = vec4(0.1, 0.1, 0.1, 1.0);
   }
 
-  for(int i = 0; i < 100; ++i){
-    float dist = distance(st, u_position_array[i]);
-    float radius = texelFetch(radiusTexture, i, 0).r;
+  for(int i = 0; i < u_size; ++i){
+    vec2 pos = vec2(texelFetch(u_dataTexture, i, 0).r, texelFetch(u_dataTexture, i, 0).g);
+    float radius = texelFetch(u_dataTexture, i, 0).b;
+    
+    float dist = distance(st, pos);
     
     if(dist < radius){
-      color = vec4(u_color[i].x, u_color[i].y, u_color[i].z, 1.0);
+      float r = texelFetch(u_colorTexture, i ,0).r;
+      float g = texelFetch(u_colorTexture, i ,0).g;
+      float b = texelFetch(u_colorTexture, i ,0).b;
+      color = vec4(r, g, b, 1.0);
     }
   }
 
